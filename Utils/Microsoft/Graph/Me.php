@@ -8,13 +8,13 @@ class Me
 
     public static function me($accessToken)
     {
-    	$endpoint = self::BASE_ENDPOINT;
+        $endpoint = self::BASE_ENDPOINT;
 
         $curlHandler = curl_init();
 
         curl_setopt($curlHandler, CURLOPT_HEADER, 0);
         curl_setopt($curlHandler, CURLOPT_HTTPHEADER, [
-            'Authorization: Bearer ' . $accessToken, 
+            'Authorization: Bearer ' . $accessToken,
         ]);
         curl_setopt($curlHandler, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($curlHandler, CURLOPT_URL, $endpoint);
@@ -33,13 +33,13 @@ class Me
 
     public static function mailFolders($accessToken, array $filters = [])
     {
-    	$endpoint = self::BASE_ENDPOINT . '/mailFolders';
+        $endpoint = self::BASE_ENDPOINT . '/mailFolders';
 
         $curlHandler = curl_init();
 
         curl_setopt($curlHandler, CURLOPT_HEADER, 0);
         curl_setopt($curlHandler, CURLOPT_HTTPHEADER, [
-            'Authorization: Bearer ' . $accessToken, 
+            'Authorization: Bearer ' . $accessToken,
         ]);
         curl_setopt($curlHandler, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($curlHandler, CURLOPT_URL, $endpoint);
@@ -72,20 +72,20 @@ class Me
         }
 
         if (empty($mailFolderId)) {
-            $endpoint = self::BASE_ENDPOINT . '/messages?$count=true';
+            $endpoint = self::BASE_ENDPOINT . '/messages?$count=true&$top=1000';
         } else {
-            $endpoint = self::BASE_ENDPOINT . '/mailFolders/' . $mailFolderId . '/messages?$count=true';
+            $endpoint = self::BASE_ENDPOINT . '/mailFolders/' . $mailFolderId . '/messages?$count=true&$top=1000';
         }
 
         if (!empty($resolvedFilters)) {
-            $endpoint .= "&\$filter=" . urlencode(implode(' and ', $resolvedFilters));
+            $endpoint = sprintf('%s&$filter=%s', $endpoint, urlencode(implode(' and ', $resolvedFilters)));
         }
 
         $curlHandler = curl_init();
 
         curl_setopt($curlHandler, CURLOPT_HEADER, 0);
         curl_setopt($curlHandler, CURLOPT_HTTPHEADER, [
-            'Authorization: Bearer ' . $accessToken, 
+            'Authorization: Bearer ' . $accessToken,
         ]);
         curl_setopt($curlHandler, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($curlHandler, CURLOPT_URL, $endpoint);
@@ -104,13 +104,13 @@ class Me
 
     public static function message($id, $accessToken)
     {
-    	$endpoint = self::BASE_ENDPOINT . "/messages/$id";
+        $endpoint = self::BASE_ENDPOINT . "/messages/$id";
 
         $curlHandler = curl_init();
 
         curl_setopt($curlHandler, CURLOPT_HEADER, 0);
         curl_setopt($curlHandler, CURLOPT_HTTPHEADER, [
-            'Authorization: Bearer ' . $accessToken, 
+            'Authorization: Bearer ' . $accessToken,
         ]);
         curl_setopt($curlHandler, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($curlHandler, CURLOPT_URL, $endpoint);
@@ -129,16 +129,16 @@ class Me
 
     public static function sendMail($accessToken, $params)
     {
-    	$endpoint = self::BASE_ENDPOINT . "/sendMail";
+        $endpoint = self::BASE_ENDPOINT . "/sendMail";
 
         $curlHandler = curl_init();
 
         curl_setopt($curlHandler, CURLOPT_HEADER, 0);
         curl_setopt($curlHandler, CURLOPT_HTTPHEADER, [
-            'Authorization: Bearer ' . $accessToken, 
-            'Content-Type: application/json', 
+            'Authorization: Bearer ' . $accessToken,
+            'Content-Type: application/json',
         ]);
-        
+
         curl_setopt($curlHandler, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($curlHandler, CURLOPT_URL, $endpoint);
         curl_setopt($curlHandler, CURLOPT_POST, 1);
