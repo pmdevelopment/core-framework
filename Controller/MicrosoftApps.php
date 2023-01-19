@@ -18,9 +18,9 @@ use Webkul\UVDesk\CoreFrameworkBundle\Utils\Microsoft\Graph as MicrosoftGraph;
 class MicrosoftApps extends AbstractController
 {
     const DEFAULT_PERMISSIONS = [
-        'offline_access', 'openid', 'profile', 'User.Read', 
-        'IMAP.AccessAsUser.All', 'SMTP.Send', 'POP.AccessAsUser.All', 
-        'Mail.Read', 'Mail.ReadBasic', 'Mail.Send', 'Mail.Send.Shared', 
+        'offline_access', 'openid', 'profile', 'User.Read',
+        'IMAP.AccessAsUser.All', 'SMTP.Send', 'POP.AccessAsUser.All',
+        'Mail.Read', 'Mail.ReadBasic', 'Mail.Send', 'Mail.Send.Shared',
     ];
 
     public function loadSettings(UserService $userService)
@@ -68,7 +68,7 @@ class MicrosoftApps extends AbstractController
         }
 
         return $this->render('@UVDeskCoreFramework//MicrosoftApps//manageConfigurations.html.twig', [
-            'microsoftApp' => null, 
+            'microsoftApp' => null,
             'redirectEndpoint' => $redirectEndpoint,
         ]);
     }
@@ -110,7 +110,7 @@ class MicrosoftApps extends AbstractController
         }
 
         return $this->render('@UVDeskCoreFramework//MicrosoftApps//manageConfigurations.html.twig', [
-            'microsoftApp' => $microsoftApp, 
+            'microsoftApp' => $microsoftApp,
             'redirectEndpoint' => $redirectEndpoint,
         ]);
     }
@@ -128,9 +128,9 @@ class MicrosoftApps extends AbstractController
         $redirectEndpoint = str_replace('http://', 'https://', $this->generateUrl('uvdesk_member_core_framework_integrations_microsoft_apps_oauth_login', [], UrlGeneratorInterface::ABSOLUTE_URL));
 
         return new RedirectResponse($microsoftIntegration->getAuthorizationUrl($microsoftApp, $redirectEndpoint, [
-            'app' => $microsoftApp->getId(), 
-            'origin' => $origin, 
-            'action' => 'add_account', 
+            'app' => $microsoftApp->getId(),
+            'origin' => $origin,
+            'action' => 'add_account',
         ]));
     }
 
@@ -146,7 +146,12 @@ class MicrosoftApps extends AbstractController
         $state = !empty($params['state']) ? json_decode($params['state'], true) : [];
 
         $microsoftApp = $entityManager->getRepository(MicrosoftApp::class)->findOneById($state['app']);
-        $redirectEndpoint = str_replace('http', 'https', $this->generateUrl('uvdesk_member_core_framework_integrations_microsoft_apps_oauth_login', [], UrlGeneratorInterface::ABSOLUTE_URL));
+
+        $url = $this->generateUrl('uvdesk_member_core_framework_integrations_microsoft_apps_oauth_login', [], UrlGeneratorInterface::ABSOLUTE_URL);
+        if(false === str_starts_with($url, 'https')){
+            $url = str_replace('http', 'https', $url);
+        }
+        $redirectEndpoint = $url;
 
         $accessTokenResponse = $microsoftIntegration->getAccessToken($microsoftApp, $params['code'], $redirectEndpoint);
 
@@ -162,22 +167,22 @@ class MicrosoftApps extends AbstractController
                 $this->addFlash('warning', $translator->trans('Microsoft app settings were verifired successfully but was unable to retrieve user information. Please check your settings and try again later.'));
             } else {
                 $account = $entityManager->getRepository(MicrosoftAccount::class)->findOneByEmail($accountDetails['mail']);
-    
+
                 if (empty($account)) {
                     $account = new MicrosoftAccount();
                 }
-    
+
                 $account
                     ->setName($accountDetails['displayName'])
                     ->setEmail($accountDetails['mail'])
                     ->setCredentials(json_encode($accessTokenResponse))
                     ->setMicrosoftApp($microsoftApp)
                 ;
-    
+
                 $entityManager->persist($microsoftApp);
                 $entityManager->persist($account);
                 $entityManager->flush();
-    
+
                 if (!empty($state['action']) && $state['action'] == 'add_account') {
                     $this->addFlash('success', $translator->trans('Microsoft account has been added successfully.'));
                 } else {
