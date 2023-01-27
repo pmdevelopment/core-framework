@@ -102,9 +102,9 @@ class Me
         return $jsonResponse;
     }
 
-    public static function message($id, $accessToken)
+    public static function message(string $id, string $accessToken): array
     {
-        $endpoint = self::BASE_ENDPOINT . "/messages/$id";
+        $endpoint = sprintf('%s/messages/%s?$select=internetMessageHeaders', self::BASE_ENDPOINT, $id);
 
         $curlHandler = curl_init();
 
