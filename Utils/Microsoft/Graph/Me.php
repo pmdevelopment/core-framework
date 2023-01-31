@@ -104,7 +104,7 @@ class Me
 
     public static function message(string $id, string $accessToken): array
     {
-        $endpoint = sprintf('%s/messages/%s?$select=internetMessageHeaders', self::BASE_ENDPOINT, $id);
+        $endpoint = sprintf('%s/messages/%s?$select=from,sender,toRecipients,ccRecipients,bccRecipients,internetMessageId,internetMessageHeaders,conversationId,subject,body', self::BASE_ENDPOINT, $id);
 
         $curlHandler = curl_init();
 
