@@ -8,17 +8,17 @@ use Webkul\UVDesk\AutomationBundle\Workflow\Event as WorkflowEvent;
 
 class CustomerReply extends WorkflowEvent
 {
-    public static function getId()
+    public static function getId(): string
     {
         return 'uvdesk.ticket.customer_reply';
     }
 
-    public static function getDescription()
+    public static function getDescription(): string
     {
         return "Customer Reply";
     }
 
-    public static function getFunctionalGroup()
+    public static function getFunctionalGroup(): string
     {
         return FunctionalGroup::TICKET;
     }

@@ -59,6 +59,7 @@ class MailCustomer extends WorkflowAction
                 // Only process attachments if required in the message body
                 // @TODO: Revist -> Maybe we should always include attachments if they are provided??
                 $attachments = [];
+                $headers = [];
 
                 if (!empty($createdThread) && (strpos($emailTemplate->getMessage(), '{%ticket.attachments%}') !== false || strpos($emailTemplate->getMessage(), '{% ticket.attachments %}') !== false)) {
                     $attachmentPathPrefix = $container->get('kernel')->getProjectDir() . "/public";

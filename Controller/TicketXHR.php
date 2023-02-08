@@ -910,7 +910,7 @@ class TicketXHR extends AbstractController
 
                 $supportRole = $em->getRepository(SupportRole::class)->findOneByCode('ROLE_CUSTOMER');
 
-                $collaborator = $this->userService->createUserInstance($data['from'], $data['firstName'], $supportRole, $extras = ["active" => true]);
+                $collaborator = $this->userService->createUserInstance($data['from'], $data['firstName'], $supportRole, ["active" => true]);
                 $checkTicket = $em->getRepository(Ticket::class)->isTicketCollaborator($ticket, $content['email']);
 
                 if (!$checkTicket) {

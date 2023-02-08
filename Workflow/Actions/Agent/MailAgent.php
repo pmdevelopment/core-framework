@@ -56,7 +56,7 @@ class MailAgent extends WorkflowAction
                 $subject = $container->get('email.service')->processEmailSubject($emailTemplate->getSubject(), $emailPlaceholders);
                 $message = $container->get('email.service')->processEmailContent($emailTemplate->getMessage(), $emailPlaceholders);
                 
-                $messageId = $container->get('email.service')->sendMail($subject, $message, $entity->getEmail(), []);
+                $container->get('email.service')->sendMail($subject, $message, $entity->getEmail());
                 break;
             // Ticket created
             case $entity instanceof CoreEntities\Ticket:
