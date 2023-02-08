@@ -75,7 +75,7 @@ class Customer extends AbstractController
                     $user = $this->userService->createUserInstance($formDetails['email'], $fullname, $supportRole, [
                         'contact' => $formDetails['contactNumber'],
                         'source' => 'website',
-                        'active' => !empty($formDetails['isActive']) ? true : false,
+                        'active' => !empty($formDetails['isActive']),
                         'image' => $uploadedFiles['profileImage'],
                     ]);
 

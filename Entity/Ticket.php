@@ -7,6 +7,7 @@ use Doctrine\ORM\Mapping as ORM;
 /**
  * Ticket
  * @ORM\Entity(repositoryClass="Webkul\UVDesk\CoreFrameworkBundle\Repository\TicketRepository")
+ *
  * @ORM\HasLifecycleCallbacks
  * @ORM\Table(name="uv_ticket")
  */
@@ -44,10 +45,9 @@ class Ticket
     private $subject;
 
     /**
-     * @var string
      * @ORM\Column(type="text", nullable=true)
      */
-    private $referenceIds;
+    private ?string $referenceIds = null;
 
     /**
      * @var string
@@ -293,26 +293,14 @@ class Ticket
         return $this->subject;
     }
 
-    /**
-     * Set referenceIds
-     *
-     * @param string $referenceIds
-     *
-     * @return Ticket
-     */
-    public function setReferenceIds($referenceIds)
+    public function setReferenceIds(?string $referenceIds): self
     {
         $this->referenceIds = $referenceIds;
 
         return $this;
     }
 
-    /**
-     * Get referenceIds
-     *
-     * @return string
-     */
-    public function getReferenceIds()
+    public function getReferenceIds(): ?string
     {
         return $this->referenceIds;
     }
@@ -629,11 +617,13 @@ class Ticket
      * Add collaborators
      *
      * @param \Webkul\UserBundle\Entity\User $collaborators
+     *
      * @return Ticket
      */
     public function addCollaborator(\Webkul\UVDesk\CoreFrameworkBundle\Entity\User $collaborators)
     {
         $this->collaborators[] = $collaborators;
+
         return $this;
     }
 
