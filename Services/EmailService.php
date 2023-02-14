@@ -10,7 +10,6 @@ use Symfony\Component\Mailer\Transport;
 use Symfony\Component\Mime\Email;
 use Symfony\Component\Mime\Address;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
-use Webkul\UVDesk\CoreFrameworkBundle\Entity\EmailTemplates;
 use Webkul\UVDesk\CoreFrameworkBundle\Entity\MicrosoftApp;
 use Webkul\UVDesk\CoreFrameworkBundle\Entity\MicrosoftAccount;
 use Webkul\UVDesk\CoreFrameworkBundle\Entity\Ticket;
@@ -20,7 +19,6 @@ use Webkul\UVDesk\CoreFrameworkBundle\Utils\Microsoft\Graph as MicrosoftGraph;
 use Webkul\UVDesk\CoreFrameworkBundle\Utils\TokenGenerator;
 use Webkul\UVDesk\MailboxBundle\Services\MailboxService;
 use Webkul\UVDesk\MailboxBundle\Utils\SMTP\Transport\AppTransportConfigurationInterface;
-use Webkul\UVDesk\CoreFrameworkBundle\Services\MicrosoftIntegration;
 
 class EmailService
 {
@@ -523,10 +521,10 @@ class EmailService
             $mailbox = $mailboxConfigurations->getDefaultMailbox();
 
             if (empty($mailbox)) {
-                return;
+                return null;
             } else {
                 if (false == $mailbox->getIsEnabled()) {
-                    return;
+                    return null;
                 }
             }
 
@@ -538,7 +536,7 @@ class EmailService
         } else {
             // Register automations conditionally if AutomationBundle has been added as an dependency.
             if (!array_key_exists('UVDeskMailboxBundle', $this->container->getParameter('kernel.bundles'))) {
-                return;
+                return null;
             }
 
             $mailbox = $mailboxConfigurations->getOutgoingMailboxByEmailAddress($mailboxEmail);
@@ -552,8 +550,7 @@ class EmailService
                         "No mailbox was found for email address '$mailboxEmail'. Please review your settings and try again later."
                     )
                 );
-
-                return;
+                return null;
             } else {
                 if (false == $mailbox->getIsEnabled()) {
                     // @TODO: Log mailbox disabled notice
@@ -563,8 +560,7 @@ class EmailService
                             "The selected mailbox for email address '$mailboxEmail' is currently disabled. Please review your settings and try again later."
                         )
                     );
-
-                    return;
+                    return null;
                 }
             }
 
@@ -670,7 +666,11 @@ class EmailService
                         continue;
                     }
 
-                    if (is_array($value)) {
+                    if (true === is_array($value)) {
+                        if (null === $value['messageId']) {
+                            continue;
+                        }
+
                         $value = $value['messageId'];
                     }
 
@@ -681,7 +681,6 @@ class EmailService
                 }
 
                 $graphResponse = MicrosoftGraph\Me::sendMail($credentials['access_token'], $emailParams);
-
                 // Refresh access token if expired
                 if (!empty($graphResponse['error'])) {
                     if (!empty($graphResponse['error']['code']) && $graphResponse['error']['code'] == 'InvalidAuthenticationToken') {

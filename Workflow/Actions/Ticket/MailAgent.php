@@ -60,84 +60,80 @@ class MailAgent extends WorkflowAction
         ];
     }
 
-    public static function applyAction(ContainerInterface $container, $entity, $value = null, $thread = null)
+    public static function applyAction(ContainerInterface $container, $entity, $value = null, $thread = null): void
     {
         $entityManager = $container->get('doctrine.orm.entity_manager');
 
-        if ($entity instanceof Ticket) {
-            $emailTemplate = $entityManager->getRepository(EmailTemplates::class)->findOneById($value['value']);
-            $emails = self::getAgentMails($value['for'], (($ticketAgent = $entity->getAgent()) ? $ticketAgent->getEmail() : ''), $container);
-            $ticketCollaborators = [];
-            if ($emails || $emailTemplate) {
-                $emailHeaders = [];
+        if (false === ($entity instanceof Ticket)) {
+            return;
+        }
 
-                $queryBuilder = $entityManager->createQueryBuilder()
-                    ->select('th.messageId as messageId')
-                    ->from(Thread::class, 'th')
-                    ->where('th.createdBy = :userType')->setParameter('userType', 'agent')
-                    ->orderBy('th.id', 'DESC')
-                    ->setMaxResults(1);
+        $emailTemplate = $entityManager->getRepository(EmailTemplates::class)->findOneById($value['value']);
+        if (null === $emailTemplate) {
+            return;
+        }
 
-                $inReplyTo = $queryBuilder->getQuery()->getOneOrNullResult();
+        $emails = self::getAgentMails($value['for'], (($ticketAgent = $entity->getAgent()) ? $ticketAgent->getEmail() : ''), $container);
+        if (0 === count($emails)) {
+            return;
+        }
 
-                if (!empty($inReplyTo)) {
-                    $emailHeaders['In-Reply-To'] = $inReplyTo;
-                }
+        $ticketCollaborators = [];
+        $emailHeaders = [];
 
-                if (!empty($entity->getReferenceIds())) {
-                    $emailHeaders['References'] = $entity->getReferenceIds();
-                }
+        $queryBuilder = $entityManager->createQueryBuilder()
+            ->select('th.messageId as messageId')
+            ->from(Thread::class, 'th')
+            ->where('th.createdBy = :userType')->setParameter('userType', 'agent')
+            ->orderBy('th.id', 'DESC')
+            ->setMaxResults(1);
 
-                if ($thread == null) {
-                    $ticketId = $entity->getId();
-                    $thread = $container->get('ticket.service')->getInitialThread("$ticketId");
-                }
+        /** @var Thread|null $inReplyTo */
+        $inReplyTo = $queryBuilder->getQuery()->getOneOrNullResult();
 
-                // Only process attachments if required in the message body
-                // @TODO: Revist -> Maybe we should always include attachments if they are provided??
-                $createdThread = isset($entity->createdThread) && $entity->createdThread->getThreadType(
-                ) != "note" ? $entity->createdThread : (isset($entity->currentThread) ? $entity->currentThread : "");
-                $attachments = [];
-                if ((!empty($createdThread) || !empty($thread)) && (strpos($emailTemplate->getMessage(), '{%ticket.attachments%}') !== false || strpos(
-                            $emailTemplate->getMessage(),
-                            '{% ticket.attachments %}'
-                        ) !== false)) {
-                    $createdThread = !empty($createdThread) ? $createdThread : $thread;
-                    $attachments = array_map(function ($attachment) use ($container) {
-                        return str_replace('//', '/', $container->get('kernel')->getProjectDir() . "/public" . $attachment->getPath());
-                    }, $entityManager->getRepository(Attachment::class)->findByThread($createdThread));
-                }
-                $placeHolderValues = $container->get('email.service')->getTicketPlaceholderValues($entity, 'agent');
-                $subject = $container->get('email.service')->processEmailSubject($emailTemplate->getSubject(), $placeHolderValues);
-                $message = $container->get('email.service')->processEmailContent($emailTemplate->getMessage(), $placeHolderValues);
-                $thread = ($thread != null) ? $thread : $createdThread;
-                if ($thread != null && $thread->getThreadType() == "reply" && $thread->getCreatedBy() != "collaborator") {
-                    $ticketCollaborators = (($thread != null) && !empty($thread->getTicket()) && $thread != "") ? $thread->getTicket()->getCollaborators() : [];
-                }
+        if (false === empty($inReplyTo)) {
+            $emailHeaders['In-Reply-To'] = $inReplyTo;
+        }
 
-                if (!empty($emails) && $emails != null) {
-                    foreach ($emails as $email) {
-                        if (is_array($email)) {
-                            $email = $email['email'];
-                        }
-                        $messageId = $container->get('email.service')->sendMail($subject, $message, $email, $emailHeaders, null, $attachments ?? []);
-                        if (!empty($messageId)) {
-                            $updatedReferenceIds = $entity->getReferenceIds() . ' ' . $messageId;
-                            $entity->setReferenceIds($updatedReferenceIds);
+        if (false === empty($entity->getReferenceIds())) {
+            $emailHeaders['References'] = $entity->getReferenceIds();
+        }
 
-                            $entityManager->persist($entity);
-                            $entityManager->flush();
-                        }
-                    }
-                }
+        if ($thread == null) {
+            $ticketId = $entity->getId();
+            $thread = $container->get('ticket.service')->getInitialThread($ticketId);
+        }
 
-                if (!empty($thread) && ($thread->getCc() || $thread->getBcc()) || $ticketCollaborators != null && count($ticketCollaborators) > 0) {
-                    self::sendCcBccMail($container, $entity, $thread, $subject, $attachments, $ticketCollaborators, $message);
-                }
-            } else {
-                // Email Template/Emails Not Found. Disable Workflow/Prepared Response
-                // $this->disableEvent($event, $entity);
+        // Only process attachments if required in the message body
+        // @TODO: Revist -> Maybe we should always include attachments if they are provided??
+        $createdThread = isset($entity->createdThread) && $entity->createdThread->getThreadType() != "note" ? $entity->createdThread : (isset($entity->currentThread) ? $entity->currentThread : "");
+
+        $placeHolderValues = $container->get('email.service')->getTicketPlaceholderValues($entity, 'agent');
+        $subject = $container->get('email.service')->processEmailSubject($emailTemplate->getSubject(), $placeHolderValues);
+        $message = $container->get('email.service')->processEmailContent($emailTemplate->getMessage(), $placeHolderValues);
+        $thread = ($thread != null) ? $thread : $createdThread;
+        if ($thread != null && $thread->getThreadType() == "reply" && $thread->getCreatedBy() != "collaborator") {
+            $ticketCollaborators = (($thread != null) && !empty($thread->getTicket()) && $thread != "") ? $thread->getTicket()->getCollaborators() : [];
+        }
+
+        foreach ($emails as $email) {
+            if (true === is_array($email)) {
+                $email = $email['email'];
             }
+
+            $messageId = $container->get('email.service')->sendMail($subject, $message, $email, $emailHeaders, null, $attachments ?? []);
+
+            if (!empty($messageId)) {
+                $updatedReferenceIds = $entity->getReferenceIds() . ' ' . $messageId;
+                $entity->setReferenceIds($updatedReferenceIds);
+
+                $entityManager->persist($entity);
+                $entityManager->flush();
+            }
+        }
+
+        if (!empty($thread) && ($thread->getCc() || $thread->getBcc()) || $ticketCollaborators != null && count($ticketCollaborators) > 0) {
+            self::sendCcBccMail($container, $entity, $thread, $subject, $attachments, $ticketCollaborators, $message);
         }
     }
 
